@@ -2,6 +2,7 @@ import Chat from "../models/chatModel.js";
 import { Request } from "../models/requestModel.js";
 import { v2 as cloudinaryV2 } from "cloudinary";
 import multer from "multer";
+import sharp from "sharp";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const chatUploadMiddleware = upload.single("file");
@@ -75,6 +76,15 @@ export const uploadChatMedia = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
+    const isImage = req.file.mimetype?.startsWith("image/");
+    const optimizedBuffer = isImage
+      ? await sharp(req.file.buffer)
+          .rotate()
+          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 72 })
+          .toBuffer()
+      : req.file.buffer;
+
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinaryV2.uploader.upload_stream(
         { folder: "chat-media", resource_type: "auto" },
@@ -83,7 +93,7 @@ export const uploadChatMedia = async (req, res) => {
           resolve(result);
         }
       );
-      stream.end(req.file.buffer);
+      stream.end(optimizedBuffer);
     });
 
     const type =

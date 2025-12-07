@@ -1,5 +1,6 @@
 import express from "express";
 import multer from "multer";
+import sharp from "sharp";
 import { v2 as cloudinaryV2 } from "cloudinary";
 
 cloudinaryV2.config({
@@ -9,13 +10,27 @@ cloudinaryV2.config({
 });
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB cap to protect mobile uploads
+});
+
+async function optimizeImage(buffer) {
+  // Rotate based on EXIF, cap width to 1600px, convert to JPEG ~72% quality
+  return sharp(buffer)
+    .rotate()
+    .resize({ width: 1600, withoutEnlargement: true })
+    .jpeg({ quality: 72 })
+    .toBuffer();
+}
 
 router.post("/", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
+
+    const bufferToUpload = await optimizeImage(req.file.buffer);
 
     // ✅ Utilise un Promise pour attendre le résultat
     const uploadPromise = new Promise((resolve, reject) => {
@@ -29,7 +44,7 @@ router.post("/", upload.single("image"), async (req, res) => {
           }
         }
       );
-      uploadStream.end(req.file.buffer);
+      uploadStream.end(bufferToUpload);
     });
 
     const result = await uploadPromise;
