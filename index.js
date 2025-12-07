@@ -16,7 +16,7 @@ app.use(json());
 app.use(helmet());
 app.use(
   cors({
-    origin: ["https://makeamitsva-orgf.onrender.com/", "http://localhost:5173"],
+    origin: "https://makeamitsva-orgf.onrender.com",
     credentials: true,
   })
 );
