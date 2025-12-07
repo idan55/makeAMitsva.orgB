@@ -14,7 +14,6 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = await verifyAsync(token, process.env.JWT_SECRET || "Idan_HaTotach");
-
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
       return res.status(401).json({ error: "Invalid token, user not found" });

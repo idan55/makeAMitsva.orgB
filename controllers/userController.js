@@ -51,15 +51,31 @@ export async function registerUser(req, res) {
       profileImage: profileImage || "",
     });
 
-    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    res.status(201).json({ message: "User registered", token, user: sanitizeUser(newUser) });
+    res
+      .status(201)
+      .json({ message: "User registered", token, user: sanitizeUser(newUser) });
   } catch (err) {
     console.error("registerUser error:", err);
-    if (err.name === "ValidationError") {
-      return res.status(400).json({ error: "Invalid input", details: err.message });
+    if (err.code === 11000) {
+      return res.status(400).json({
+        error: "Duplicate field value",
+        details: "User already exists with this email or phone",
+      });
     }
-    res.status(500).json({ error: "Error registering user", details: err.message });
+    if (err.name === "ValidationError") {
+      return res
+        .status(400)
+        .json({ error: "Invalid input", details: err.message });
+    }
+    res
+      .status(500)
+      .json({ error: "Error registering user", details: err.message });
   }
 }
 
@@ -67,10 +83,12 @@ export async function registerUser(req, res) {
 export async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email & password required" });
+    if (!email || !password)
+      return res.status(400).json({ error: "Email & password required" });
 
     const user = await User.findOne({ email: email.trim().toLowerCase() });
-    if (!user) return res.status(401).json({ error: "Invalid email or password" });
+    if (!user)
+      return res.status(401).json({ error: "Invalid email or password" });
 
     if (user.isBanned) {
       return res.status(403).json({ error: "Account is banned" });
@@ -80,7 +98,11 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.json({ message: "Login successful", token, user: sanitizeUser(user) });
   } catch (err) {
@@ -121,7 +143,9 @@ export async function updateProfileImage(req, res) {
     res.json({ message: "Profile image updated", user: sanitizeUser(user) });
   } catch (err) {
     console.error("updateProfileImage error:", err);
-    res.status(500).json({ error: "Error updating profile image", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error updating profile image", details: err.message });
   }
 }
 // DELETE USER
@@ -131,7 +155,9 @@ export async function deleteUser(req, res) {
 
     // Vérifie que l'utilisateur connecté supprime bien son propre compte
     if (req.user.id !== userId) {
-      return res.status(403).json({ error: "You can only delete your own account" });
+      return res
+        .status(403)
+        .json({ error: "You can only delete your own account" });
     }
 
     const user = await User.findByIdAndDelete(userId);
@@ -142,6 +168,8 @@ export async function deleteUser(req, res) {
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     console.error("deleteUser error:", err);
-    res.status(500).json({ error: "Error deleting user", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error deleting user", details: err.message });
   }
 }
