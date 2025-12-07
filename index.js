@@ -4,7 +4,7 @@ const PORT = process.env.PORT || 4000;
 const uri = process.env.MONGODB_URI;
 import express, { json } from "express";
 const app = express();
-import 'dotenv/config';
+import "dotenv/config";
 
 import mongoose from "mongoose";
 import cors from "cors";
@@ -14,7 +14,12 @@ import uploadRouter from "./routers/uploadRouter.js";
 import adminRouter from "./routers/adminRouter.js";
 app.use(json());
 app.use(helmet());
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(
+  cors({
+    origin: ["https://makeamitsva-orgf.onrender.com/", "http://localhost:5173"],
+    credentials: true,
+  })
+);
 
 import userRouter from "./routers/userRouter.js";
 import requestRouter from "./routers/requestRouter.js";
@@ -61,11 +66,11 @@ mongoose
     process.exit(1);
   });
 
-  if (uri) {
-    app.listen(PORT, () => {
-      console.log("Server is running on port: ", PORT);
-    });
-  } else {
-    console.error("No uri found in env file (MONGODB_URI is missing)");
-    process.exit(1);
-  }
+if (uri) {
+  app.listen(PORT, () => {
+    console.log("Server is running on port: ", PORT);
+  });
+} else {
+  console.error("No uri found in env file (MONGODB_URI is missing)");
+  process.exit(1);
+}
