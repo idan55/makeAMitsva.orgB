@@ -4,7 +4,10 @@ import { v2 as cloudinaryV2 } from "cloudinary";
 import multer from "multer";
 import sharp from "sharp";
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }, // allow larger mobile photos before compression
+});
 export const chatUploadMiddleware = upload.single("file");
 
 export const getMessagesByChatId = async (req, res) => {
@@ -77,13 +80,19 @@ export const uploadChatMedia = async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const isImage = req.file.mimetype?.startsWith("image/");
-    const optimizedBuffer = isImage
-      ? await sharp(req.file.buffer)
+    let optimizedBuffer = req.file.buffer;
+
+    if (isImage) {
+      try {
+        optimizedBuffer = await sharp(req.file.buffer)
           .rotate()
           .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-          .jpeg({ quality: 72 })
-          .toBuffer()
-      : req.file.buffer;
+          .webp({ quality: 70 })
+          .toBuffer();
+      } catch (e) {
+        console.warn("Chat image optimization failed, sending original buffer:", e.message);
+      }
+    }
 
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinaryV2.uploader.upload_stream(

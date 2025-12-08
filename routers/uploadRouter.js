@@ -12,15 +12,16 @@ cloudinaryV2.config({
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB cap to protect mobile uploads
+  // Slightly higher cap so mobile photos survive the upload, we still compress before Cloudinary
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
 });
 
 async function optimizeImage(buffer) {
-  // Rotate based on EXIF, cap width to 1600px, convert to JPEG ~72% quality
+  // Rotate based on EXIF, cap width to 1600px, convert to WebP ~70% quality
   return sharp(buffer)
     .rotate()
     .resize({ width: 1600, withoutEnlargement: true })
-    .jpeg({ quality: 72 })
+    .webp({ quality: 70 })
     .toBuffer();
 }
 
@@ -30,7 +31,13 @@ router.post("/", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const bufferToUpload = await optimizeImage(req.file.buffer);
+    let bufferToUpload = req.file.buffer;
+
+    try {
+      bufferToUpload = await optimizeImage(req.file.buffer);
+    } catch (e) {
+      console.warn("Image optimization failed, sending original buffer:", e.message);
+    }
 
     // ✅ Utilise un Promise pour attendre le résultat
     const uploadPromise = new Promise((resolve, reject) => {
