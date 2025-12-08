@@ -9,7 +9,6 @@ import 'dotenv/config';
 import mongoose from "mongoose";
 import cors from "cors";
 import helmet from "helmet";
-import graphRouter from "./routers/graphRouter.js";
 import uploadRouter from "./routers/uploadRouter.js";
 import adminRouter from "./routers/adminRouter.js";
 app.use(json());
@@ -24,7 +23,6 @@ app.use("/api/users", userRouter);
 app.use("/api/requests", requestRouter);
 app.use("/api/chats", chatRouter);
 app.use("/api/admin", adminRouter);
-app.use("/api/graphs", graphRouter);
 app.get("/api/health", (req, res) => {
   const dbState = mongoose.connection.readyState;
 
