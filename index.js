@@ -13,9 +13,22 @@ import uploadRouter from "./routers/uploadRouter.js";
 import adminRouter from "./routers/adminRouter.js";
 app.use(json());
 app.use(helmet());
+
+const allowedOrigins = (
+  process.env.CLIENT_ORIGINS ||
+  "https://makeamitsva-orgf.onrender.com,http://localhost:5173"
+)
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: ["https://makeamitsva-orgf.onrender.com", "http://localhost:5173"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow non-browser requests
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
