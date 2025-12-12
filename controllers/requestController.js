@@ -4,19 +4,20 @@ import User from "../models/userModel.js";
 // CREATE REQUEST
 export async function postRequest(req, res) {
   try {
-    const { title, description, longitude, latitude } = req.body;
+    const { title, description, longitude, latitude, urgency = "normal" } = req.body;
     const userId = req.user.id;
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title or description missing" });
     }
     if (latitude == null || longitude == null) {
-      return res.status(400).json({ error: "Location (lat, lng) is required" });
+      return res.status(400).json({ error: "Location (lng, lat) is required" });
     }
 
     const newRequest = await Request.create({
       title,
       description,
+      urgency: ["low", "normal", "high"].includes(urgency) ? urgency : "normal",
       createdBy: userId,
       isCompleted: false,
       location: {
@@ -46,7 +47,7 @@ export async function getAllRequestsByDistance(req, res) {
     if (latitude == null || longitude == null || distanceInMeters == null) {
       return res
         .status(400)
-        .json({ error: "Location (lat, lng) and distance are required" });
+        .json({ error: "Location (lng, lat) and distance are required" });
     }
 
     const lng = parseFloat(longitude);

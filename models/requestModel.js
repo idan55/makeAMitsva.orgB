@@ -20,6 +20,11 @@ const requestSchema = new mongoose.Schema(
       maxlength: [200, "Description cannot exceed 200 characters"],
       trim: true,
     },
+    urgency: {
+      type: String,
+      enum: ["low", "normal", "high"],
+      default: "normal",
+    },
     isCompleted: {
       type: Boolean,
       default: false,

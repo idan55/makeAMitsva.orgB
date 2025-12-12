@@ -1,4 +1,4 @@
-// Basic Israeli phone normalization used on the client to match server logic.
+// Basic Israeli mobile normalization (mobile only, matches server logic)
 export function normalizeIsraeliPhone(input) {
   if (!input) return "";
 
@@ -6,10 +6,10 @@ export function normalizeIsraeliPhone(input) {
 
   if (digits.startsWith("00")) digits = digits.slice(2); // drop international prefix
   if (digits.startsWith("972")) digits = digits.slice(3); // drop country code
-  if (digits.startsWith("0")) digits = digits.slice(1); // drop local leading zero
+  while (digits.startsWith("0")) digits = digits.slice(1); // drop leading zeros
 
-  const validLocal = /^[2-9]\d{7,8}$/.test(digits); // landlines (8) or mobile (9)
-  if (!validLocal) return "";
+  // Only mobile: 5XXXXXXXX (9 digits after stripping leading zeros)
+  if (!/^5\d{8}$/.test(digits)) return "";
 
   return "+972" + digits;
 }
