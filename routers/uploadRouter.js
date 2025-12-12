@@ -1,19 +1,14 @@
 import express from "express";
 import multer from "multer";
 import sharp from "sharp";
-import { v2 as cloudinaryV2 } from "cloudinary";
+import cloudinaryV2 from "../cloudinary.js";
 
-cloudinaryV2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  // Slightly higher cap so mobile photos survive the upload, we still compress before Cloudinary
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
+  // Increase cap to 100MB to support larger media
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
 });
 
 async function optimizeImage(buffer) {
@@ -35,8 +30,11 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     try {
       bufferToUpload = await optimizeImage(req.file.buffer);
-    } catch (e) {
-      console.warn("Image optimization failed, sending original buffer:", e.message);
+    } catch (err) {
+      console.warn(
+        "Image optimization failed, sending original buffer:",
+        err.message
+      );
     }
 
     // ✅ Utilise un Promise pour attendre le résultat
@@ -55,10 +53,9 @@ router.post("/", upload.single("image"), async (req, res) => {
     });
 
     const result = await uploadPromise;
-    
+
     console.log("✅ Cloudinary upload success:", result.secure_url); // Debug
     res.json({ url: result.secure_url });
-    
   } catch (err) {
     console.error("❌ Upload error:", err);
     res.status(500).json({ error: err.message });

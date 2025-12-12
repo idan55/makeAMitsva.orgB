@@ -6,13 +6,15 @@ import sharp from "sharp";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 }, // allow larger mobile photos before compression
+  limits: { fileSize: 100 * 1024 * 1024 }, // allow up to 100MB for media
 });
 export const chatUploadMiddleware = upload.single("file");
 
 export const getMessagesByChatId = async (req, res) => {
   try {
-    const chat = await Chat.findById(req.params.chatId).populate("messages.sender");
+    const chat = await Chat.findById(req.params.chatId).populate(
+      "messages.sender"
+    );
     if (!chat) return res.status(404).json({ error: "Chat not found" });
 
     // Ensure messages from deleted users still render with a placeholder
@@ -46,7 +48,9 @@ export const postMessageToChat = async (req, res) => {
       : [];
 
     if (!trimmed && parsedAttachments.length === 0) {
-      return res.status(400).json({ error: "Message must have text or attachment" });
+      return res
+        .status(400)
+        .json({ error: "Message must have text or attachment" });
     }
 
     const chat = await Chat.findById(req.params.chatId);
@@ -67,8 +71,8 @@ export const postMessageToChat = async (req, res) => {
     const lastMessage = chat.messages[chat.messages.length - 1];
 
     return res.status(201).json({
-      message: lastMessage,
-      messages: chat.messages,
+      message: lastMessage
+      // messages: chat.messages,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -86,11 +90,19 @@ export const uploadChatMedia = async (req, res) => {
       try {
         optimizedBuffer = await sharp(req.file.buffer)
           .rotate()
-          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+          .resize({
+            width: 1600,
+            height: 1600,
+            fit: "inside",
+            withoutEnlargement: true,
+          })
           .webp({ quality: 70 })
           .toBuffer();
       } catch (e) {
-        console.warn("Chat image optimization failed, sending original buffer:", e.message);
+        console.warn(
+          "Chat image optimization failed, sending original buffer:",
+          e.message
+        );
       }
     }
 
@@ -129,8 +141,10 @@ export const startChat = async (req, res) => {
     const { otherUserId, requestId } = req.body;
     const currentUserId = req.user.id;
 
-    if (!otherUserId) return res.status(400).json({ error: "otherUserId is required" });
-    if (!requestId) return res.status(400).json({ error: "requestId is required" });
+    if (!otherUserId)
+      return res.status(400).json({ error: "otherUserId is required" });
+    if (!requestId)
+      return res.status(400).json({ error: "requestId is required" });
 
     if (otherUserId === currentUserId) {
       return res.status(400).json({ error: "Cannot start chat with yourself" });
@@ -147,7 +161,11 @@ export const startChat = async (req, res) => {
     });
 
     if (!chat) {
-      chat = await Chat.create({ participants, request: requestId, messages: [] });
+      chat = await Chat.create({
+        participants,
+        request: requestId,
+        messages: [],
+      });
     }
 
     return res.json({ chatId: chat._id, chat });
@@ -168,7 +186,10 @@ export const listMyChats = async (req, res) => {
       const lastMessageRaw = chat.messages[chat.messages.length - 1] || null;
       const lastMessage =
         lastMessageRaw && !lastMessageRaw.sender
-          ? { ...lastMessageRaw.toObject(), sender: { _id: "deleted", name: "Deleted user" } }
+          ? {
+              ...lastMessageRaw.toObject(),
+              sender: { _id: "deleted", name: "Deleted user" },
+            }
           : lastMessageRaw;
 
       const safeParticipants = (chat.participants || []).map((p) => {
