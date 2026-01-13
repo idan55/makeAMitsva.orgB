@@ -26,7 +26,6 @@ function sanitizeUser(user) {
   };
 }
 
-// REGISTER
 export async function registerUser(req, res) {
   try {
     const { name, age, email, password, phone, profileImage } = req.body;
@@ -79,7 +78,6 @@ export async function registerUser(req, res) {
   }
 }
 
-// LOGIN
 export async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
@@ -111,7 +109,6 @@ export async function loginUser(req, res) {
   }
 }
 
-// GET ME
 export async function getMe(req, res) {
   try {
     const user = await User.findById(req.user.id);
@@ -124,7 +121,6 @@ export async function getMe(req, res) {
   }
 }
 
-// UPDATE PROFILE IMAGE
 export async function updateProfileImage(req, res) {
   try {
     const { profileImage } = req.body;
@@ -148,12 +144,10 @@ export async function updateProfileImage(req, res) {
       .json({ error: "Error updating profile image", details: err.message });
   }
 }
-// DELETE USER
 export async function deleteUser(req, res) {
   try {
     const userId = req.params.id;
 
-    // Vérifie que l'utilisateur connecté supprime bien son propre compte
     if (req.user.id !== userId) {
       return res
         .status(403)

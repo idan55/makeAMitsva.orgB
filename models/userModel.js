@@ -1,17 +1,15 @@
 import mongoose from "mongoose";
 import validator from "validator";
 
-// Normalize to E.164 (+972XXXXXXXXX) and reject non‑Israeli numbers early.
 export function normalizePhone(phone) {
   if (!phone) return phone;
 
   let digits = phone.replace(/\D/g, "");
 
-  if (digits.startsWith("00")) digits = digits.slice(2); // drop international prefix
-  if (digits.startsWith("972")) digits = digits.slice(3); // drop country code if present
-  while (digits.startsWith("0")) digits = digits.slice(1); // drop leading zeros
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("972")) digits = digits.slice(3);
+  while (digits.startsWith("0")) digits = digits.slice(1);
 
-  // Require Israeli mobile only: 5XXXXXXXX (9 digits after stripping leading 0)
   if (/^5\d{8}$/.test(digits)) return "+972" + digits;
 
   return null;
@@ -45,7 +43,7 @@ const userSchema = new mongoose.Schema(
     couponEarned: { type: Boolean, default: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     isBanned: { type: Boolean, default: false },
-    profileImage: { type: String, default: "" }, // <-- important
+    profileImage: { type: String, default: "" },
   },
   { timestamps: true }
 );

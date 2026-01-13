@@ -19,7 +19,6 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ error: "Invalid token, user not found" });
     }
 
-    // ✅ Stocke uniquement ce dont tu as besoin pour les routes
     req.user = {
       id: user._id.toString(),
       role: user.role,

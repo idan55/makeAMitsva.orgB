@@ -6,7 +6,7 @@ import sharp from "sharp";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 }, // allow up to 100MB for media
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 export const chatUploadMiddleware = upload.single("file");
 
@@ -17,7 +17,6 @@ export const getMessagesByChatId = async (req, res) => {
     );
     if (!chat) return res.status(404).json({ error: "Chat not found" });
 
-    // Ensure messages from deleted users still render with a placeholder
     const sanitizedMessages = chat.messages.map((m) => {
       if (m.sender) return m;
       return {
@@ -66,13 +65,11 @@ export const postMessageToChat = async (req, res) => {
     chat.messages.push(message);
     await chat.save();
 
-    // populate AFTER save, BEFORE sending
     await chat.populate("messages.sender");
     const lastMessage = chat.messages[chat.messages.length - 1];
 
     return res.status(201).json({
       message: lastMessage
-      // messages: chat.messages,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });

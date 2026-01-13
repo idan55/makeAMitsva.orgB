@@ -1,4 +1,3 @@
-// models/chatModel.js
 import mongoose from "mongoose";
 
 const attachmentSchema = new mongoose.Schema(
@@ -26,7 +25,7 @@ const chatSchema = new mongoose.Schema(
     ],
     messages: [messageSchema],
   },
-  { timestamps: true } // gives chat.createdAt & chat.updatedAt
+  { timestamps: true }
 );
 
 export default mongoose.model("Chat", chatSchema);

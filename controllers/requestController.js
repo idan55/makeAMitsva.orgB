@@ -1,7 +1,6 @@
 import { Request } from "../models/requestModel.js";
 import User from "../models/userModel.js";
 
-// CREATE REQUEST
 export async function postRequest(req, res) {
   try {
     const { title, description, longitude, latitude, urgency = "normal" } = req.body;
@@ -22,7 +21,7 @@ export async function postRequest(req, res) {
       isCompleted: false,
       location: {
         type: "Point",
-        coordinates: [longitude, latitude], // [lng, lat]
+        coordinates: [longitude, latitude],
       },
     });
 
@@ -39,7 +38,6 @@ export async function postRequest(req, res) {
   }
 }
 
-// NEARBY BY DISTANCE
 export async function getAllRequestsByDistance(req, res) {
   try {
     const { longitude, latitude, distanceInMeters } = req.query;
@@ -52,7 +50,7 @@ export async function getAllRequestsByDistance(req, res) {
 
     const lng = parseFloat(longitude);
     const lat = parseFloat(latitude);
-    const maxDistance = parseFloat(distanceInMeters); // meters
+    const maxDistance = parseFloat(distanceInMeters);
 
     if (Number.isNaN(lng) || Number.isNaN(lat) || Number.isNaN(maxDistance)) {
       return res.status(400).json({ error: "Invalid coordinates or distance" });
@@ -65,7 +63,7 @@ export async function getAllRequestsByDistance(req, res) {
         $geoNear: {
           near: {
             type: "Point",
-            coordinates: [lng, lat], // [lng, lat]
+            coordinates: [lng, lat],
           },
           distanceField: "distance",
           maxDistance: maxDistance,
@@ -97,7 +95,6 @@ export async function getAllRequestsByDistance(req, res) {
   }
 }
 
-// OPEN REQUESTS CREATED BY ME
 export async function getMyOpenRequests(req, res) {
   try {
     const userId = req.user.id;
@@ -120,7 +117,6 @@ export async function getMyOpenRequests(req, res) {
   }
 }
 
-// REQUESTS I SOLVED FOR OTHERS (COMPLETED BY ME)
 export async function getAllRequestsByCompleterid(req, res) {
   try {
     const completerId = req.user.id;
@@ -143,7 +139,6 @@ export async function getAllRequestsByCompleterid(req, res) {
   }
 }
 
-// HELPER: "I WANT TO HELP"
 export async function wantToHelp(req, res) {
   try {
     const requestId = req.params.id;
@@ -155,14 +150,12 @@ export async function wantToHelp(req, res) {
       return res.status(404).json({ error: "Request not found" });
     }
 
-    // cannot help your own request
     if (request.createdBy.toString() === helperId) {
       return res
         .status(400)
         .json({ error: "You cannot help your own request" });
     }
 
-    // if already has another helper
     if (request.completedBy && request.completedBy.toString() !== helperId) {
       return res
         .status(400)
@@ -188,7 +181,6 @@ export async function wantToHelp(req, res) {
   }
 }
 
-// CREATOR: MARK REQUEST COMPLETED
 export async function markRequestCompleted(req, res) {
   try {
     const requestId = req.params.id;
@@ -200,7 +192,6 @@ export async function markRequestCompleted(req, res) {
       return res.status(404).json({ error: "Request not found" });
     }
 
-    // only the creator can confirm completion
     if (request.createdBy.toString() !== seekerId) {
       return res
         .status(403)
@@ -213,10 +204,8 @@ export async function markRequestCompleted(req, res) {
         .json({ error: "No helper has been assigned to this request yet" });
     }
 
-    // mark that the seeker confirmed
     request.seekerConfirmed = true;
 
-    // if both sides confirmed and not already completed -> close + give stars + coupon check
     if (
       request.helperConfirmed &&
       request.seekerConfirmed &&
@@ -224,7 +213,6 @@ export async function markRequestCompleted(req, res) {
     ) {
       request.isCompleted = true;
 
-      // ⭐ give 10 stars to the helper (if still exists)
       const helperExists = await User.findById(request.completedBy);
       if (helperExists) {
         const updatedHelper = await User.findByIdAndUpdate(
@@ -236,10 +224,8 @@ export async function markRequestCompleted(req, res) {
         if (updatedHelper && updatedHelper.stars >= 500 && !updatedHelper.couponEarned) {
           updatedHelper.couponEarned = true;
           await updatedHelper.save();
-          // here you could also trigger email, SMS, etc.
         }
       } else {
-        // Helper was deleted; still mark completed but skip star/coupon logic
         console.warn("Completed request has deleted helper, skipping stars.", {
           requestId: requestId,
           helperId: request.completedBy,
@@ -264,7 +250,6 @@ export async function markRequestCompleted(req, res) {
   }
 }
 
-// REQUESTS I CREATED THAT ARE COMPLETED
 export async function getMyCompletedRequests(req, res) {
   try {
     const userId = req.user.id;
