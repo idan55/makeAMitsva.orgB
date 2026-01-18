@@ -7,6 +7,7 @@ import {
   uploadChatMedia,
   chatUploadMiddleware,
   listMyChats,
+  flagUserInChat,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -18,4 +19,5 @@ router.post("/:chatId/messages", authenticateToken, postMessageToChat);
 router.post("/:chatId/attachments", authenticateToken, chatUploadMiddleware, uploadChatMedia);
 
 router.get("/:chatId/messages", authenticateToken, getMessagesByChatId);
+router.post("/:chatId/flag", authenticateToken, flagUserInChat);
 export default router;

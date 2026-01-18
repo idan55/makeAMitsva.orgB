@@ -17,6 +17,15 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const flagSchema = new mongoose.Schema(
+  {
+    from: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    to: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const chatSchema = new mongoose.Schema(
   {
     request: { type: mongoose.Schema.Types.ObjectId, ref: "Request" },
@@ -24,6 +33,8 @@ const chatSchema = new mongoose.Schema(
       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     ],
     messages: [messageSchema],
+    flags: [flagSchema],
+    isClosed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

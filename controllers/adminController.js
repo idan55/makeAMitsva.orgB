@@ -1,11 +1,14 @@
 import User from "../models/userModel.js";
 import { Request } from "../models/requestModel.js";
 
-const publicUserFields = "_id name email phone role isBanned stars couponEarned profileImage createdAt updatedAt";
+const publicUserFields = "_id name email phone role isBanned stars couponEarned flagsCount lastFlaggedAt profileImage createdAt updatedAt";
 
 export async function listUsers(req, res) {
   try {
-    const users = await User.find({}, publicUserFields).sort({ createdAt: -1 });
+    const users = await User.find({}, publicUserFields).sort({
+      lastFlaggedAt: -1,
+      createdAt: -1,
+    });
     res.json({ users });
   } catch (err) {
     res.status(500).json({ error: "Failed to list users", details: err.message });

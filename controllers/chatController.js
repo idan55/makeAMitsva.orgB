@@ -1,4 +1,5 @@
 import Chat from "../models/chatModel.js";
+import User from "../models/userModel.js";
 import { Request } from "../models/requestModel.js";
 import { v2 as cloudinaryV2 } from "cloudinary";
 import multer from "multer";
@@ -25,7 +26,12 @@ export const getMessagesByChatId = async (req, res) => {
       };
     });
 
-    res.json({ messages: sanitizedMessages });
+    const currentUserId = String(req.user.id);
+    const hasFlagged = (chat.flags || []).some(
+      (flag) => String(flag.from) === currentUserId
+    );
+
+    res.json({ messages: sanitizedMessages, isClosed: chat.isClosed, hasFlagged });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -54,6 +60,9 @@ export const postMessageToChat = async (req, res) => {
 
     const chat = await Chat.findById(req.params.chatId);
     if (!chat) return res.status(404).json({ error: "Chat not found" });
+    if (chat.isClosed) {
+      return res.status(403).json({ error: "Chat is closed" });
+    }
 
     const message = {
       sender: req.user.id,
@@ -201,6 +210,7 @@ export const listMyChats = async (req, res) => {
         participants: safeParticipants,
         lastMessage,
         updatedAt: chat.updatedAt,
+        isClosed: chat.isClosed,
       };
     });
 
@@ -208,5 +218,72 @@ export const listMyChats = async (req, res) => {
   } catch (err) {
     console.error("listMyChats error:", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const flagUserInChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { targetUserId } = req.body;
+    const currentUserId = req.user.id;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: "targetUserId is required" });
+    }
+
+    if (targetUserId === currentUserId) {
+      return res.status(400).json({ error: "You cannot flag yourself" });
+    }
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+
+    const participants = (chat.participants || []).map((p) => String(p));
+    if (!participants.includes(String(currentUserId))) {
+      return res.status(403).json({ error: "Not a participant of this chat" });
+    }
+    if (!participants.includes(String(targetUserId))) {
+      return res.status(400).json({ error: "Target user is not in this chat" });
+    }
+
+    const alreadyFlagged = (chat.flags || []).some(
+      (flag) =>
+        String(flag.from) === String(currentUserId) &&
+        String(flag.to) === String(targetUserId)
+    );
+    if (alreadyFlagged) {
+      return res.status(409).json({ error: "You already flagged this user" });
+    }
+
+    chat.flags = chat.flags || [];
+    chat.flags.push({
+      from: currentUserId,
+      to: targetUserId,
+      createdAt: new Date(),
+    });
+    chat.isClosed = true;
+    await chat.save();
+
+    const updated = await User.findByIdAndUpdate(
+      targetUserId,
+      { $inc: { flagsCount: 1 }, $set: { lastFlaggedAt: new Date() } },
+      { new: true }
+    ).select("_id flagsCount lastFlaggedAt");
+
+    if (!updated) return res.status(404).json({ error: "User not found" });
+
+    if (chat.request) {
+      await Request.findByIdAndUpdate(chat.request, {
+        isCompleted: true,
+        expiresAt: null,
+      });
+    }
+
+    return res.json({
+      message: "User flagged",
+      user: updated,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 };

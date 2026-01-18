@@ -33,7 +33,10 @@ const requestSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
-      expires: 86400,
+    },
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -70,5 +73,6 @@ const requestSchema = new mongoose.Schema(
   }
 );
 requestSchema.index({ location: "2dsphere" });
+requestSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const Request = mongoose.model("Request", requestSchema);

@@ -1,18 +1,17 @@
 import mongoose from "mongoose";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import validator from "validator";
 
 export function normalizePhone(phone) {
   if (!phone) return phone;
 
-  let digits = phone.replace(/\D/g, "");
+  let value = String(phone).trim();
+  if (value.startsWith("00")) value = "+" + value.slice(2);
 
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("972")) digits = digits.slice(3);
-  while (digits.startsWith("0")) digits = digits.slice(1);
+  const parsed = parsePhoneNumberFromString(value);
+  if (!parsed || !parsed.isValid()) return null;
 
-  if (/^5\d{8}$/.test(digits)) return "+972" + digits;
-
-  return null;
+  return parsed.number;
 }
 
 const userSchema = new mongoose.Schema(
@@ -43,6 +42,8 @@ const userSchema = new mongoose.Schema(
     couponEarned: { type: Boolean, default: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     isBanned: { type: Boolean, default: false },
+    flagsCount: { type: Number, default: 0 },
+    lastFlaggedAt: { type: Date, default: null },
     profileImage: { type: String, default: "" },
   },
   { timestamps: true }

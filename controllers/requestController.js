@@ -19,6 +19,7 @@ export async function postRequest(req, res) {
       urgency: ["low", "normal", "high"].includes(urgency) ? urgency : "normal",
       createdBy: userId,
       isCompleted: false,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       location: {
         type: "Point",
         coordinates: [longitude, latitude],
@@ -212,6 +213,7 @@ export async function markRequestCompleted(req, res) {
       !request.isCompleted
     ) {
       request.isCompleted = true;
+      request.expiresAt = null;
 
       const helperExists = await User.findById(request.completedBy);
       if (helperExists) {
